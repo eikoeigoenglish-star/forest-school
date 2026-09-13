@@ -12,7 +12,15 @@ canvas.addEventListener('wheel',e=>{if(paused)return;distance=THREE.MathUtils.cl
 const joy=document.getElementById('joystick'),knob=document.getElementById('knob');let joyID=null;
 function updateJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,len=Math.hypot(dx,dy),scale=Math.min(1,40/Math.max(1,len));stick.x=dx*scale/40;stick.z=dy*scale/40;knob.style.transform=`translate(${dx*scale}px,${dy*scale}px)`;}
 joy.addEventListener('pointerdown',e=>{joyID=e.pointerId;joy.setPointerCapture(e.pointerId);updateJoy(e);e.preventDefault()});joy.addEventListener('pointermove',e=>{if(joyID===e.pointerId)updateJoy(e)});for(const type of ['pointerup','pointercancel'])joy.addEventListener(type,()=>{joyID=null;stick.x=stick.z=0;knob.style.transform='translate(0,0)'});
-function move(dt){if(paused)return false;let x=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)+stick.x,z=(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0)+stick.z;let len=Math.hypot(x,z);if(len<.08)return false;if(len>1){x/=len;z/=len;}let speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?7:4.3)*dt;let dx=(x*Math.cos(yaw)+z*Math.sin(yaw))*speed,dz=(-x*Math.sin(yaw)+z*Math.cos(yaw))*speed;
+function move(dt){if(paused)return false;
+const shift=keys.has('ShiftLeft')||keys.has('ShiftRight');
+const yawLeft=shift&&keys.has('ArrowLeft'),yawRight=shift&&keys.has('ArrowRight');
+if(yawLeft||yawRight)yaw+=(yawLeft?1:-1)*1.8*dt;
+let x=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)+(!shift&&keys.has('ArrowRight')?1:0)-(!shift&&keys.has('ArrowLeft')?1:0)+stick.x,z=(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0)+stick.z;
+let len=Math.hypot(x,z);
+if(len<.08)return yawLeft||yawRight;
+if(len>1){x/=len;z/=len;}
+let speed=(shift?7:4.3)*dt;let dx=(x*Math.cos(yaw)+z*Math.sin(yaw))*speed,dz=(-x*Math.sin(yaw)+z*Math.cos(yaw))*speed;
 // Axis-separated collision allows sliding along buildings, trees, and shore.
 if(!world.blocked(player.x+dx,player.z))player.x+=dx;if(!world.blocked(player.x,player.z+dz))player.z+=dz;player.y=world.groundHeight(player.x,player.z);return true;}
 return{move,clear,getCamera(){return{yaw,pitch,distance}},reset(){player.set(-17,0,12);yaw=0;pitch=.62;distance=12;clear();},rotate(v){yaw+=v},setPaused(v){paused=v;clear();},get paused(){return paused}};
